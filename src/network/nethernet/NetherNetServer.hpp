@@ -4,9 +4,6 @@
 
 class NetherNetServer {
 public:
-    NetherNetServer(std::filesystem::path root)
-        : mDiscovery(root) {}
-
     void initialize() {
         mDiscovery.initialize();
     }

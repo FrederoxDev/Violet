@@ -1,17 +1,11 @@
 #include "NetherNetDiscovery.hpp"
 #include <print>
 #include <thread>
-#include <filesystem>
-
-NetherNetDiscovery::NetherNetDiscovery(std::filesystem::path root)
-    : mCertPath((root / "server.crt").string()),
-      mKeyPath((root / "server.key").string()),
-      mHttpServer(mCertPath.c_str(), mKeyPath.c_str()) {}
 
 void NetherNetDiscovery::initialize() {
-    mHttpServer.Get("/v1/join", [](const httplib::Request& req, httplib::Response& res) {
+    mHttpServer.Get("/v1/join",[](const httplib::Request& req, httplib::Response& res) {
         res.set_content(
-            R"({"name": "NetherNet Server", "protocol": 2169, "version": "1.26.45", "level": "Bedrock level", "players": 0, "maxPlayers": 100, "gameType": 1})", 
+            R"({"name": "NetherNet Server", "protocol": 2169, "version": "1.26.45", "level": "Bedrock level", "players": 10, "maxPlayers": 100, "gameType": 1})", 
             "application/json"
         );
 

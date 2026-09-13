@@ -1,19 +1,15 @@
 #pragma once
 #include <httplib.h>
 #include <thread>
+#include "NetherNetHttpServer.hpp"
 
 class NetherNetDiscovery {
 public:
-    NetherNetDiscovery(std::filesystem::path root);
-
     void initialize();
     void start();
     void stop();
 
-private:
-    std::string mCertPath;
-    std::string mKeyPath;
-    
-    httplib::SSLServer mHttpServer;
+private:    
+    NetherNetHttpServer mHttpServer;
     std::thread mHttpThread;
 };

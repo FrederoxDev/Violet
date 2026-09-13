@@ -2,7 +2,7 @@ add_rules("mode.debug", "mode.release")
 
 set_languages("c++26")
 
-add_requires("cpp-httplib", {configs = {ssl = true}})
+add_requires("cpp-httplib")
 add_requires("entt")
 add_requires("libdatachannel")
 

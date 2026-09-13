@@ -1,7 +1,7 @@
 #include "ServerInstance.hpp"
 
 ServerInstance::ServerInstance(std::filesystem::path root)
-    : mRoot(std::move(root)), mNetherNetServer(mRoot) {}
+    : mRoot(std::move(root)) {}
 
 void ServerInstance::initialize() {
     DimensionId overworldId{ mNextDimensionId++ };
