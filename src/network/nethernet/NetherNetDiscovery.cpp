@@ -1,6 +1,12 @@
 #include "NetherNetDiscovery.hpp"
+#include "network/nethernet/NetherNetConnection.hpp"
+#include "rtc/description.hpp"
+#include "rtc/peerconnection.hpp"
+#include <chrono>
 #include <print>
 #include <thread>
+#include "network/nethernet/NetherNetServer.hpp"
+#include "network/nethernet/identity/ClientIdentity.hpp"
 
 void NetherNetDiscovery::initialize() {
     mHttpServer.Get("/v1/join",[](const httplib::Request& req, httplib::Response& res) {
@@ -8,14 +14,53 @@ void NetherNetDiscovery::initialize() {
             R"({"name": "NetherNet Server", "protocol": 2169, "version": "1.26.45", "level": "Bedrock level", "players": 10, "maxPlayers": 100, "gameType": 1})", 
             "application/json"
         );
-
-        std::println("Received join request from {}:{} body: {}", req.remote_addr, req.remote_port, req.body);
     });
 
-    mHttpServer.Post("/v1/join/:networkId", [](const httplib::Request& req, httplib::Response& res) {
+    mHttpServer.Post("/v1/join/:networkId", [this](const httplib::Request& req, httplib::Response& res) {
         auto networkId = req.path_params.at("networkId");
+        auto clientIdentityResult = ClientIdentity::extractClientIdentity(req.body);
 
-        std::println("Received join request for network ID {} from {}:{} body: {}", networkId, req.remote_addr, req.remote_port, req.body);
+        if (!clientIdentityResult.has_value()) {
+            res.status = 401;
+            return;
+        }
+
+        auto conResult = this->mServer.createConnection(networkId);
+        if (!conResult.has_value()) {
+            res.status = 400;
+            return;
+        }
+
+        auto& clientIdentity = clientIdentityResult.value();
+        auto& connection = *conResult.value();
+        auto& peer = connection.mPeerConnection;
+
+        peer.setRemoteDescription(rtc::Description(
+            clientIdentity.strippedDescription,
+            rtc::Description::Type::Offer)
+        );
+        
+        peer.setLocalDescription(rtc::Description::Type::Answer);
+
+        if (!connection.waitForGathering(std::chrono::seconds(5))) {
+            res.status = 500;
+            std::println("timeout for networkId: {}", networkId);
+            return;
+        }
+
+        auto description = peer.localDescription();
+        if (!description.has_value()) {
+            std::println("Failed to get local description for networkId: {}", networkId);
+            res.status = 500;
+            return;
+        }
+
+        res.set_content(
+            std::string(description.value()),
+            "application/sdp"
+        );
+
+        std::println("Sent answer for networkId: {}, description: {}", networkId, std::string(*description));
     });
 }
 
