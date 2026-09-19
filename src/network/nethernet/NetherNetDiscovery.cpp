@@ -6,24 +6,37 @@
 #include <print>
 #include <thread>
 #include "network/nethernet/NetherNetServer.hpp"
+#include "network/nethernet/identity/OfferIdentity.hpp"
 #include "network/nethernet/identity/ClientIdentity.hpp"
 
 void NetherNetDiscovery::initialize() {
     mHttpServer.Get("/v1/join",[](const httplib::Request& req, httplib::Response& res) {
         res.set_content(
-            R"({"name": "NetherNet Server", "protocol": 2169, "version": "1.26.45", "level": "Bedrock level", "players": 10, "maxPlayers": 100, "gameType": 1})", 
+            R"({"name": "NetherNet Server", "protocol": 2169, "version": "1.26.45", "level": "Bedrock level", "players": 67, "maxPlayers": 100, "gameType": 1})", 
             "application/json"
         );
     });
 
     mHttpServer.Post("/v1/join/:networkId", [this](const httplib::Request& req, httplib::Response& res) {
         auto networkId = req.path_params.at("networkId");
-        auto clientIdentityResult = ClientIdentity::extractClientIdentity(req.body);
-
-        if (!clientIdentityResult.has_value()) {
+        auto offerIdentityResult = OfferIdentity::extractOfferIdentity(req.body);
+        if (!offerIdentityResult) {
             res.status = 401;
             return;
         }
+
+        auto verifiedIdentity = offerIdentityResult->verify();
+        if (!verifiedIdentity) {
+            res.status = 401;
+            return;
+        }       
+        
+        std::println("Creating connection for networkId: {}, clientIdentity: name={}, xuid={}, playfabId={}", 
+            networkId, 
+            verifiedIdentity->name, 
+            verifiedIdentity->xuid, 
+            verifiedIdentity->playfabId
+        );
 
         auto conResult = this->mServer.createConnection(networkId);
         if (!conResult.has_value()) {
@@ -31,12 +44,12 @@ void NetherNetDiscovery::initialize() {
             return;
         }
 
-        auto& clientIdentity = clientIdentityResult.value();
+        auto& clientIdentity = offerIdentityResult.value();
         auto& connection = *conResult.value();
         auto& peer = connection.mPeerConnection;
 
         peer.setRemoteDescription(rtc::Description(
-            clientIdentity.strippedDescription,
+            clientIdentity.strippedSdp,
             rtc::Description::Type::Offer)
         );
         
