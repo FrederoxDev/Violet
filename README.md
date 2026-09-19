@@ -6,4 +6,4 @@ of NetherNet!
 This project is just to learn more about how server software works as opposed to being something that is genuienly intended
 to be used in real production
 
-Currently gets up to a WebRTC connection request
+Currently gets up to validating the clients token is signed by mojang and validating the fingerprints

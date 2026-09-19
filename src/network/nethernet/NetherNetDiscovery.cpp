@@ -19,6 +19,7 @@ void NetherNetDiscovery::initialize() {
 
     mHttpServer.Post("/v1/join/:networkId", [this](const httplib::Request& req, httplib::Response& res) {
         auto networkId = req.path_params.at("networkId");
+
         auto offerIdentityResult = OfferIdentity::extractOfferIdentity(req.body);
         if (!offerIdentityResult) {
             res.status = 401;

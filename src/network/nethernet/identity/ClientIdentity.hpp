@@ -10,7 +10,6 @@ struct ClientIdentity {
     std::string name;
     std::string xuid;
     std::string playfabId;
-    std::string cpk;
 
     static std::expected<ClientIdentity, IdentityError> parseClientIdentity(const json& payload);
 };
